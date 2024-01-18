@@ -1,3 +1,5 @@
+章末問題10.1
+
 photon_cons.c: 光子数が保存する方法で解くコード
 photon_simple.c:　光学的厚さを計算してシンプルに解くコード
 plot.py:　描画の python script
