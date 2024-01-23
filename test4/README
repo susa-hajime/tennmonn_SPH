@@ -1,0 +1,10 @@
+コンパイル・実行
+
+% make 
+% ./run.exe
+
+※main.f90の中でsupercriticalとsubcriticalの初期条件を設定（編集）してからコンパイルする
+
+出力：out.dat(supercritical でもsubcriticalでも同じファイルに書き出すことに注意)
+
+描画：gnuplotのスクリプト super.gp, sub.gp → super.png, sub.png 生成
