@@ -1,12 +1,8 @@
-コンパイル・実行
+章末問題10.5 
+コンパイル・実行 
+% make
+% ./run.exe 
+出力：out.dat(数値計算結果) 
 
-% make 
-% ./run.exe
-
-出力：out.dat(数値計算結果), out_iso.dat（等温解析解）, out_ad.dat（断熱解析解）
-
+初期条件（plot用）：out_ini.dat
 描画：gnuplotのスクリプト plot.gp → plot.png生成
-
-
-
-
