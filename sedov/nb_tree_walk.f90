@@ -1,21 +1,18 @@
 ! -------------------------------------------------------------------
-! ACCEL: routine to compute the acceleration components and potential
-! of all bodies in the system.
-!     Originally by Joshua Barnes - adopted to Makino's code by J. Makino
-!      
+!  Neighbor seach code by H.Susa
+!     Originally distributed by J. Makino as Tree-walk code
 ! -------------------------------------------------------------------
 subroutine nb_tree_walk
   use define_tree
+  use define_hoge, only: xb,sd,nbody
   implicit none
   integer p, k, IOVERFL, itter
   real(8) mid(ndim)
       
-  !$OMP PARALLEL private(p, k, mid , IOVERFL, itter) 
-  !$OMP DO schedule(static) 
-  do p = 1 , nbodyj
+  do p = 1 , nbody
      
      do k = 1, ndim
-        mid(k) =  posj(k,p)
+      mid(k) =  xb(k,p)
      enddo
      
      itter = 0
@@ -24,94 +21,54 @@ subroutine nb_tree_walk
 
      if( IOVERFL == 100 .and. itter .lt. 30) then
         itter = itter + 1
-        SKRD(p)= SKRD(p)*0.9d0
+        sd(p)= sd(p)*0.9d0
         goto 20
      endif
      
   enddo
   
-  !$OMP END DO
-  !$OMP END PARALLEL
-  
-
-  
   return
 end subroutine nb_tree_walk
 
 ! ---------------------------------------------------------------------
-! NBWALK:Serach the neighboring list by walking up to the tree
+! NBWALK: Serach the neighboring list by walking up to the tree
 ! ---------------------------------------------------------------------
 
 subroutine nbwalk(p0,mid0,IOVERFL)
   use define_tree
-  use distance
+  use define_hoge, only: xb,sd,nbody
   integer p0
   real(8) mid0(ndim)
-  integer LSTK
-  parameter(LSTK = 1024)
-  integer ndsp, ndstk(LSTK), p, k
-  real(8):: ad(ndim), dr2, SD2, dr2min, dr2max, boxsize
-  real(8):: xminmax0(ndim,2)      
-  integer i
-  integer IOVERFL         
-  integer:: subsub(nsubcell), neicnt_tmp
-
+  integer,parameter:: LSTK = 1024
+  integer ndstk(LSTK), p, k, i
+  real(8) ad(ndim), dr2, SD2, dr2min, dr2max, boxsize
+  real(8) xminmax0(ndim,2)      
+  integer IOVERFL
+  integer neicnt_tmp, ndsp
   
-  IOVERFL=-10000
-  SD2=SKRD(p0)*SKRD(p0)
+  IOVERFL = -10000
+  SD2=4d0*sd(p0)*sd(p0)
   neicnt(p0) = 0
   neicnt_tmp = 0
-  !     ----------------------------------------------
-  !     INITIALIZE COUNTERS FOR NUMBER OF FORCE TERMS.
-  !     ----------------------------------------------
-  nbterm = 0
-  iself = 0
-  !     ---------------------------------------
-  !     PUSH THE ROOT CELL ONTO THE NODE STACK.
-  !     ---------------------------------------
-  ndsp = 1
+  ndsp=1
   ndstk(ndsp) = root
     
-  !     -----------------------------------
-  !     LOOP UNTIL THERE ARE NO NODES LEFT.
-  !     -----------------------------------
   
-20 if (ndsp > 0) then
-     !     ------------------------------------------------------
-     !     MORE WORK TO DO, BE SURE TO HAVE SOME PLACE TO PUT IT.
-     !     ------------------------------------------------------
-     if (nbterm >= maxterm) then
-        write(*,*) 'nbwalk: array overflow'
-        stop
-     endif
-     !     -------------------------------
-     !     POP NODE TO PROCESS FROM STACK.
-     !     -------------------------------
-     
+  do while (ndsp > 0)
+      
      p = ndstk(ndsp)
      ndsp = ndsp - 1
-     !     -------------------------------
-     !     CLASSIFY p AS A BODY OR A CELL.
-     !     -------------------------------
-     
+   
      if (p <= nbody) then
         
-        
-        !     --------------------------------------------------------
-        !     ADD THIS PARTICLE TO THE NEIGHBOR LIST
-        !     --------------------------------------------------------
-        
-
-        ad(1) = POS(1,p) - mid0(1)
-        ad(2) = POS(2,p) - mid0(2)
-        ad(3) = POS(3,p) - mid0(3)
-        dr2 = ad(1)*ad(1) + ad(2)*ad(2) + ad(3)*ad(3) 
-
+        dr2 = 0d0
+        do k = 1,ndim
+          ad(k) = xb(k,p) - mid0(k)
+          dr2= dr2 + ad(k)*ad(k)
+        enddo
         
         
-        if(dr2 < SD2) then
-           
-           nbterm = nbterm + 1
+        if(dr2 < SD2) then ! in case p-particle is a neighbor
            
            neicnt_tmp=neicnt_tmp+1               
            
@@ -120,58 +77,30 @@ subroutine nbwalk(p0,mid0,IOVERFL)
               neicnt(p0) = neicnt_tmp
               return
            endif
-           
-           
+
            neilist(min(neicnt_tmp,nneib),p0) = p
            
         endif
         
      else
         
-        !     ----------------------------------------------------
-        !     A CELL: DISTANCE**2 
-        !     FROM THE PARTICE TO THE CUBE
-        !     ----------------------------------------------------
         boxsize = sizebox(p)
-        xminmax0(1,1) = CPOS(1,p) - boxsize
-        xminmax0(1,2) = CPOS(1,p) + boxsize
-        xminmax0(2,1) = CPOS(2,p) - boxsize
-        xminmax0(2,2) = CPOS(2,p) + boxsize
-        xminmax0(3,1) = CPOS(3,p) - boxsize
-        xminmax0(3,2) = CPOS(3,p) + boxsize
+        xminmax0(1,1) = cpos(1,p) - boxsize
+        xminmax0(1,2) = cpos(1,p) + boxsize
+        xminmax0(2,1) = cpos(2,p) - boxsize
+        xminmax0(2,2) = cpos(2,p) + boxsize
+        xminmax0(3,1) = cpos(3,p) - boxsize
+        xminmax0(3,2) = cpos(3,p) + boxsize
         
         call get_nearest_distance( xminmax0, mid0, dr2 )            
             
         if ( dr2 < SD2 ) then
-           
-           !     ----------------------------------------------
-           !     SKIP THE SUBDIVISION FORGET ABOUT THIS NODE 
-           !     ----------------------------------------------
-           
-           
-           !     -----------------------------------------------------
-           !     OTHERWISE: SUBDIVIDE THE CELL FOR FURTHER PROCESSING.
-           !     -----------------------------------------------------
-           do  k = 1, nsubcell
-              subsub(k)=SUBP(k,p)
-           enddo
-           
+                      
            do k = 1, nsubcell
-              !     -------------------------------
-              !     SEE WHICH SUB-NODES TO PROCESS.
-              !     -------------------------------
-              if ( subsub(k) /= 0 ) then
-                 !     -----------------------
-                 !     PUSH NODE ON THE STACK.
-                 !     -----------------------
-                 !              if (ndsp .ge. LSTK) then
-                 !                 write(*,*) ' nbwalk: stack overflow'
-                 !                 stop
-                 !              endif
-                 
+            if ( subp(k,p) /= 0 ) then
+
                  ndsp = ndsp + 1
-                 ndstk(ndsp) =  subsub(k)
-                 
+                 ndstk(ndsp) = subp(k,p)                 
               endif
               
            enddo
@@ -181,9 +110,7 @@ subroutine nbwalk(p0,mid0,IOVERFL)
         
      endif
         
-     goto 20
-     
-  endif
+  end do
 
   neicnt(p0) = neicnt_tmp
 
@@ -191,6 +118,32 @@ subroutine nbwalk(p0,mid0,IOVERFL)
 end subroutine nbwalk
       
       
+subroutine get_nearest_distance(xminmax0,xyz,dr2)
+    real(8) :: xminmax0(3,2),xyz(3),dr2
+    integer :: ix(1:3),fac(1:3)
+    integer :: k
+    
+    do k=1,3
+       if(xminmax0(k,1) > xyz(k)) then
+          ix(k)=1
+          fac(k)=1d0
+       elseif(xminmax0(k,2) < xyz(k)) then
+          ix(k)=2
+          fac(k)=1d0
+       else
+          ix(k)=1
+          fac(k)=0d0
+       endif
+    enddo
+    
+    dr2=0
+    
+    do k=1,3
+       dr2=dr2+fac(k)*(xminmax0(k,ix(k))-xyz(k))**2
+    enddo
+
+    return
+  end subroutine get_nearest_distance
 
 
 

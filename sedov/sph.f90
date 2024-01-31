@@ -1,88 +1,70 @@
 subroutine sph_rho
   use define_hoge
-  use define_tree, only: neilist,neicnt
+  use define_tree, only: neilist,neicnt,ndim
   implicit none
   integer i, jj, j 
   real(8) r,w, dw
   
-  do i = 1 , nb+mergin
+  do i = 1 , nbody
      db(i)=0
      f_h(i)=0d0
   enddo
 
-!  ! $OMP PARALLEL private(i,jj,j,r)
-!  ! $OMP DO schedule(static) 
-  do i = 1 , nb+mergin
+  do i = 1 , nbody
      
      do jj = 1, neicnt(i)
         j = neilist(jj,i)
-!        r = dsqrt((xb(1,i)-xb(1,j))**2 + (xb(2,i)-xb(2,j))**2 + (xb(3,i)-xb(3,j))**2) /sd(j)
-!        db(i) = db(i) + mass(j)*w( r ) / sd( j )**3 ! scatter 
 
         r = dsqrt((xb(1,i)-xb(1,j))**2 + (xb(2,i)-xb(2,j))**2 + (xb(3,i)-xb(3,j))**2) /sd(i)
         db(i) = db(i) + mass(j)*w( r ) / sd( i )**3 ! gather
 
         f_h(i) = f_h(i) - mass(j) / sd( i )**4 * ( 3d0 * w( r )+ r * dw(r) ) 
 
-!        r = dsqrt((xb(1,i)-xb(1,j))**2 + (xb(2,i)-xb(2,j))**2 + (xb(3,i)-xb(3,j))**2) /(sd(i)+sd(j))*2d0
-!        db(i) = db(i) + mass(j)*w( r ) / (sd( j )+sd( i ))**3*8d0 !gatnher&scat
 
      enddo
 
      f_h(i) = 1d0/(1d0+sd(i)*f_h(i)/(3d0*db(i)))
 
   enddo
-!  !$OMP END DO
-!  !$OMP END PARALLEL
+
 
   return
 end subroutine sph_rho
 
 subroutine sph
   use define_hoge
-  use define_tree, only: neilist,neicnt
+  use define_tree, only: neilist,neicnt,ndim
   implicit none
-  real(8) :: ptot, ptot2, pij, dwx,dwy,dwz,dwx2,dwy2,dwz2, cs1,cs2,dwij, dwij2, vn2inv, dwi, dwj
-!  real(8) :: ptot, pij, dwx,dwy,dwz,dwx2,dwy2,dwz2, cs1,cs2,dwij, dwij2, vn2inv
+  real(8) :: ptot, ptot2, pij, dwx,dwy,dwz,dwx2,dwy2,dwz2, cs1,cs2,dwij, dwij2, dwi, dwj
   real(8) :: vrtot,rmuij,rmuijsig, dvx,dvy,dvz,dx,dy,dz, rij, rijinv, rij2, factor, csav
   real(8) :: sd2_i, sd2_nlp, sdav, vsig
   real(8) :: dw
   real(8) :: xx, yy, zz, ss
   integer :: i, jj, nlp, k
 
-!    !$OMP PARALLEL private(ptot2, pij, dwi,dwj,dwx,dwy,dwz,dwx2,dwy2,dwz2, cs1,cs2,dwij, dwij2, vn2inv,vrtot,rmuij, dvx,dvy,dvz,dx,dy,dz, rij, rijinv, rij2, factor,sd2_i, sd2_nlp, sdav, i, jj, nlp), shared(rmaxmu)
 
-
-!  !$OMP DO schedule(static) 
-  do i = 1 , nb+mergin
+  do i = 1 , nbody
 
      tb(i) = As(i)*db(i)**(gamma-1.d0)
      pb(i) = db(i) * tb(i)  ! tb : (gamma-1)*energy_per_unit_mass
 
   enddo
-!  !$OMP END DO
 
-  vn2inv=1.d0/vn2
 
 !***** intialize *************************************************
 
-!  !$OMP DO schedule(static) 
-  do i = 1 , nb+mergin
 
+  do i = 1 , nb+mergin
+ 
      cs(i)=0.d0
      rmaxmu(i)=0.d0
-
+ 
   enddo
-!  !$OMP END DO
 
-
-!  !$OMP DO schedule(static) 
-!  do i = -mergin+1 , nb+mergin
   do i = 1 , nb
      
-     dtb(i)=0.d0
      dAs(i)=0.d0
-     do k  = 1, 3
+     do k  = 1, ndim
         dpx(k,i)=0.d0
      enddo
      xx = xb( 1 , i )
@@ -134,8 +116,8 @@ subroutine sph
                  rmuij = sdav * vrtot / ( rij2 + eps_vis*sdav*sdav )
                  rmuijsig = vrtot / dsqrt( rij2 + eps_vis*sdav*sdav )
 
-                 cs1=dsqrt(vn2*tb(i)*gamma)
-                 cs2=dsqrt(vn2*tb(nlp)*gamma)
+                 cs1=dsqrt(tb(i)*gamma)
+                 cs2=dsqrt(tb(nlp)*gamma)
 
                  csav = 5d-1*(cs1+cs2)
 
@@ -150,10 +132,7 @@ subroutine sph
 
                  ! artificial viscosity (monaghan & gingold)
                  pij = ( -aqalp * rmuij * ( cs1 + cs2 ) * 5.d-1 + aqbet * rmuij**2 )&
-                      &/(db(i)+db(nlp))*2.d0*vn2inv
-                 
-                 ! artificial viscosity (monaghan 1997)
-!                 pij = -aqalp*vsig*rmuijsig /(db(i)+db(nlp))*vn2inv
+                      &/(db(i)+db(nlp))*2.d0
                  
 
                  ! \rho_0 dws/dr_i/rij
@@ -161,7 +140,6 @@ subroutine sph
                  
                  dwij=factor*5.d-1*(dw(rij/sd(i))/(sd2_i**2) &
                             &            +dw(rij/sd(nlp))/(sd2_nlp**2)) !CAUTION ->dimension
-!                 dwij=factor*dw(rij/sdav)/sdav**4 !CAUTION ->dimension 
                        
                  dwij2=factor*dw(rij/sdav)/sdav**4 !CAUTION ->dimension 
 
@@ -180,40 +158,16 @@ subroutine sph
                  dwz2=dwij2*dz
                  
 
-                 ! pressure force ( including artificial viscosity ) ******
-                 
                  ! ptot = tb(i)/db(i) + tb(nlp)/db(nlp) + pij
                  ptot2 = tb(i)/db(i) * f_h(i) * dwi + tb(nlp)/db(nlp) *f_h(nlp) * dwj
                        
-                 ! ! force
-                 ! dpx(1,i)=dpx(1,i)-ptot*dwx
-                 ! dpx(2,i)=dpx(2,i)-ptot*dwy
-                 ! dpx(3,i)=dpx(3,i)-ptot*dwz
+                 ! force
                  ! conservative
                  dpx(1,i)=dpx(1,i)-pij*dwx - ptot2 * dx
                  dpx(2,i)=dpx(2,i)-pij*dwy - ptot2 * dy
                  dpx(3,i)=dpx(3,i)-pij*dwz - ptot2 * dz
                  
-                 ! internal energy difference 
-                 dtb(i) = dtb(i) + (gamma-1d0)*( tb(i) / db(i) + pij * 5.d-1 )* (dvx * dwx2 + dvy*dwy2 +dvz*dwz2)
-!                 dtb(i) = dtb(i) + (gamma-1d0)*( tb(i) / db(i) + pij * 5.d-1 )* (dvx * dwx + dvy*dwy +dvz*dwz)
-
                  dAs(i) = dAs(i) + (gamma-1d0)/db(i)**(gamma-1d0) *(  pij * 5.d-1 )* (dvx*dwx + dvy*dwy +dvz*dwz)
-
-!                 if(i <= nb/2 .and. i > nb/4) then
-
-!                 if(i == 2648) then
-!                    write(*,*) 'hoge'
-!                    write(*,*) i,nlp 
-!                    write(*,*) dwij, dwx
-!                    write(*,*) pij,rmuij
-!                    write(*,*) cs1,cs2
-!                    write(*,*) dpx(1,i),dpx(2,i),dpx(3,i)
-!                    write(*,*) tb(i)/db(i) , tb(nlp)/db(nlp) , pij
-!                    write(*,*) mass(i) , mass(nlp)
-!                    write(*,*) db(i) , db(nlp)
-!                    write(*,*) tb(i) , tb(nlp)
-!                 endif
 
               endif
               
@@ -221,10 +175,8 @@ subroutine sph
            endif
      enddo
 
-     if(i ==1 ) write(33,*) "next step"
-     
-     
-     cs(i)=dsqrt(vn2*tb(i)*gamma)
+
+     cs(i)=dsqrt(tb(i)*gamma)
      
   endif
 
@@ -232,31 +184,19 @@ subroutine sph
      
 
 enddo
-!  !$OMP END DO
 
-
-!  !$OMP DO schedule(static) 
   do i = 1, nb
      
      cs(i)=cs(i)+0.6*(aqalp*cs(i)+aqbet*rmaxmu(i))
         
   enddo
-!  !$OMP END DO
 
-  !******end of core routines ******
-  
 
-!  !$OMP END PARALLEL
 
   return
   
 end subroutine sph
 
-!real(8) function w( r )
-!  real(8),parameter:: pi =3.141592d0
-!  real(8) :: r
-!  w = 1d0 / dsqrt(2d0*pi) * dexp(-r**2/2)
-!end function w
 
 !***** kernel function ***********
 real(8) function  w(a)
@@ -266,7 +206,7 @@ real(8) function  w(a)
 
   if(a < 1.d0) then
      w=4.d0-6.d0*a**2+3.d0*a**3
-  elg7e1n2sanseif(a < 2.d0) then
+  elseif(a < 2.d0) then
      w=(2.d0-a)**3
   else
      w=0.d0
@@ -280,9 +220,6 @@ end function w
 real*8 function  dw(a)
   implicit none
   real(8):: a,pi
-!  pi = 3.141592d0
-!  dw=- 1d0 / dsqrt(2d0*pi) *dabs(b)*dexp(-b**2/2)
-!  return
 
   pi=3.14159265358979d0
   if(a.le.0.6666666667d0) then
