@@ -1,7 +1,8 @@
 subroutine initialize
-  use define_tree
+
+   use define_tree
   implicit none
-  integer::k
+  integer k
 
   do k = 1,3
      rmin(k) = -2d0
@@ -18,15 +19,14 @@ subroutine initialize
    
 end subroutine initialize
 
-! ----------------------------------------------------------------
-! SETBOX: adjust the system cube to assure it contains all bodies.
-! ----------------------------------------------------------------
+
 subroutine setbox
+   
   use define_tree
   use define_hoge, only: xb, nbody
   implicit none
-  real(8):: xmin(ndim),xmax(ndim),rmid(ndim),rsold
-  integer::k,i
+  real(8) xmin(ndim),xmax(ndim),rmid(ndim),rsold
+  integer k,i
   
   do k = 1, ndim
      xmin(k) = 1d30

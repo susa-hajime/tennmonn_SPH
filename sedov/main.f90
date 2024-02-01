@@ -1,5 +1,3 @@
-!****** Main Routine *****************************************
-!*************************************************************  
 program main
   use define_hoge
   use define_tree, only: neilist,neicnt,ndim

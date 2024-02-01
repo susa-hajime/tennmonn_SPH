@@ -1,7 +1,3 @@
-! -------------------------------------------------------------------
-!  Neighbor seach code by H.Susa
-!     Originally distributed by J. Makino as Tree-walk code
-! -------------------------------------------------------------------
 subroutine nb_tree_walk
   use define_tree
   use define_hoge, only: xb,sd,nbody
@@ -30,9 +26,6 @@ subroutine nb_tree_walk
   return
 end subroutine nb_tree_walk
 
-! ---------------------------------------------------------------------
-! NBWALK: Serach the neighboring list by walking up to the tree
-! ---------------------------------------------------------------------
 
 subroutine nbwalk(p0,mid0,IOVERFL)
   use define_tree
@@ -119,9 +112,9 @@ end subroutine nbwalk
       
       
 subroutine get_nearest_distance(xminmax0,xyz,dr2)
-    real(8) :: xminmax0(3,2),xyz(3),dr2
-    integer :: ix(1:3),fac(1:3)
-    integer :: k
+    real(8) xminmax0(3,2),xyz(3),dr2
+    integer ix(1:3),fac(1:3)
+    integer k
     
     do k=1,3
        if(xminmax0(k,1) > xyz(k)) then

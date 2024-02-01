@@ -1,20 +1,14 @@
-!     --------------------------------------------------------------------
-!      BH tree make (arranged by H.S. 2003.8.5. -> 2011.11.18 F90
-!     original version is distributed by J.Makino in f77
-!
-!     BFSLOAD: load particles into tree using breadth-first algorithm.
-!     ----------------------------------------------------------------
 subroutine make_tree
   use define_tree
   use define_hoge, only: xb,nbody
-  integer:: makecell
-  integer:: p, i, k, j
-  integer:: nlist(maxcell), nlist2(maxcell)
-  integer:: nlen, nlen2, nblist, nblist2
-  integer:: blist(maxbody), blist2(maxbody), bsubid(maxbody)
-  integer:: bpid(maxbody)
-  integer:: bli, bpi, k1,k2,k3,nind,nli,bsi
-  real(8)::  sgnx(ndim),newsize,newtol
+  integer makecell
+  integer p, i, k, j
+  integer nlist(maxcell), nlist2(maxcell)
+  integer nlen, nlen2, nblist, nblist2
+  integer blist(maxbody), blist2(maxbody), bsubid(maxbody)
+  integer bpid(maxbody)
+  integer bli, bpi, k1,k2,k3,nind,nli,bsi
+  real(8) sgnx(ndim),newsize
 
   call setbox
   root = makecell()

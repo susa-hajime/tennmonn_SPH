@@ -17,10 +17,7 @@ subroutine sph_rho
 
         r = dsqrt((xb(1,i)-xb(1,j))**2 + (xb(2,i)-xb(2,j))**2 + (xb(3,i)-xb(3,j))**2) /sd(i)
         db(i) = db(i) + mass(j)*w( r ) / sd( i )**3 ! gather
-
         f_h(i) = f_h(i) - mass(j) / sd( i )**4 * ( 3d0 * w( r )+ r * dw(r) ) 
-
-
      enddo
 
      f_h(i) = 1d0/(1d0+sd(i)*f_h(i)/(3d0*db(i)))
@@ -35,12 +32,12 @@ subroutine sph
   use define_hoge
   use define_tree, only: neilist,neicnt,ndim
   implicit none
-  real(8) :: ptot, ptot2, pij, dwx,dwy,dwz,dwx2,dwy2,dwz2, cs1,cs2,dwij, dwij2, dwi, dwj
-  real(8) :: vrtot,rmuij,rmuijsig, dvx,dvy,dvz,dx,dy,dz, rij, rijinv, rij2, factor, csav
-  real(8) :: sd2_i, sd2_nlp, sdav, vsig
-  real(8) :: dw
-  real(8) :: xx, yy, zz, ss
-  integer :: i, jj, nlp, k
+  real(8) ptot, ptot2, pij, dwx,dwy,dwz,dwx2,dwy2,dwz2, cs1,cs2,dwij, dwij2, dwi, dwj
+  real(8) vrtot,rmuij,rmuijsig, dvx,dvy,dvz,dx,dy,dz, rij, rijinv, rij2, factor, csav
+  real(8) sd2_i, sd2_nlp, sdav, vsig
+  real(8) dw
+  real(8) xx, yy, zz, ss
+  integer i, jj, nlp, k
 
 
   do i = 1 , nbody
@@ -201,8 +198,7 @@ end subroutine sph
 !***** kernel function ***********
 real(8) function  w(a)
   implicit none
-  real(8) :: a, pi
-  pi=3.1415926535897932d0
+  real(8) :: a, pi=3.1415926535897932d0
 
   if(a < 1.d0) then
      w=4.d0-6.d0*a**2+3.d0*a**3
@@ -219,9 +215,7 @@ end function w
 !----- derivertive of kernel function -----
 real*8 function  dw(a)
   implicit none
-  real(8):: a,pi
-
-  pi=3.14159265358979d0
+  real(8):: a, pi=3.14159265358979d0
   if(a.le.0.6666666667d0) then
      dw=4.d0
   elseif(a.le.1.d0) then
