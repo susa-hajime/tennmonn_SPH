@@ -7,4 +7,4 @@ f90で書かれている。
 sedov.gp: 計算結果を描画する gnuplotのscript
 
 ※ define_tree.f90, maketree.f90, nb_tree_walk.f90, tree_subs.f90 
-は J.Makino 氏によってf77でかつて配布されたN体計算コードを改変して作成されている。
+are based on the tree f77 code originally provided J.Makino.
